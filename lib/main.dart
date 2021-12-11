@@ -33,6 +33,8 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isBannerAdReady = false;
   bool _isInterstitialAdReady = false;
   late InterstitialAd _interstitialAd;
+  late RewardedAd _rewardedAd;
+  bool _isRewardedAdReady = false;
   int count = 0;
   @override
   void initState() {
@@ -56,6 +58,42 @@ class _MyHomePageState extends State<MyHomePage> {
     );
 
     _bannerAd.load();
+  }
+
+  void loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: AdHelper.rewardedAdUnitId,
+      request: AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              setState(() {
+                _isRewardedAdReady = false;
+              });
+            },
+          );
+
+          setState(() {
+            _isRewardedAdReady = true;
+          });
+          _rewardedAd.show(
+            onUserEarnedReward: (ad, reward) => () {},
+          );
+          setState(() {
+            _isRewardedAdReady = false;
+          });
+        },
+        onAdFailedToLoad: (err) {
+          print('Failed to load a rewarded ad: ${err.message}');
+          setState(() {
+            _isRewardedAdReady = false;
+          });
+        },
+      ),
+    );
   }
 
   void increment() {
@@ -112,7 +150,20 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Stack(
           children: [
             Center(
-              child: Text("${count}"),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Center(
+                    child: Text("${count}"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      loadRewardedAd();
+                    },
+                    child: Text("Get Reward"),
+                  ),
+                ],
+              ),
             ),
             if (_isBannerAdReady)
               Align(
